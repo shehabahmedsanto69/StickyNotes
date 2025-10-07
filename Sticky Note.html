@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sticky Notes</title>
+  <link href="https://fonts.googleapis.com/css2?family=Titan+One&family=Hanalei+Fill&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background: linear-gradient(135deg, #22253b 0%, #374378 100%);
+      min-height: 100vh;
+      margin: 0;
+      font-family: 'Titan One', 'Hanalei Fill', cursive, sans-serif;
+      letter-spacing: 0.03em;
+    }
+    h1 {
+      text-align: center;
+      margin-top: 38px;
+      font-size: 2.2em;
+      color: #FFF9EA;
+      font-family: 'Hanalei Fill', 'Titan One', cursive;
+      text-shadow: 3px 3px 10px #8360c3, 2px 2px 0 #F7B5C7;
+      letter-spacing: 2px;
+    }
+    #addNoteBtn {
+      display: block;
+      margin: 22px auto;
+      background: linear-gradient(90deg, #f7b5c7, #b5f3ff);
+      color: #2b2237;
+      border: none;
+      border-radius: 25px;
+      padding: 12px 38px;
+      cursor: pointer;
+      font-size: 1.18em;
+      box-shadow: 0 2px 7px #8360c3;
+      font-family: inherit;
+      font-weight: bold;
+      transition: background 0.2s, color 0.2s;
+    }
+    #addNoteBtn:hover {
+      background: linear-gradient(90deg, #cce6ff, #f7b5c7);
+      color: #8360c3;
+    }
+    #notesBoard {
+      position: relative;
+      margin: 0 auto;
+      width: 91vw;
+      max-width: 1200px;
+      min-height: 80vh;
+      padding: 18px 10px;
+    }
+    .note {
+      position: absolute;
+      min-width: 170px;
+      min-height: 120px;
+      padding: 16px 17px 32px 17px;
+      border-radius: 16px;
+      color: #3c3341;
+      font-size: 1.07em;
+      font-family: 'Titan One', 'Hanalei Fill', cursive, sans-serif;
+      box-shadow: 0 4px 16px 2px #8162e6a9;
+      transition: transform 0.25s, box-shadow 0.2s;
+      cursor: grab;
+      z-index: 10;
+      animation: animeNotePop 0.6s;
+      background: #fffff8;
+      border: 3px solid #8360c3;
+    }
+    .note.pink { background: #ffe3eb; border-color: #f7b5c7; }
+    .note.blue { background: #e4f7ff; border-color: #b3d3fa;}
+    .note.yellow { background: #fff9d0; border-color: #ffe58d;}
+    .note.lavender { background: #ede0ff; border-color: #c3bcfa;}
+    .note.mint { background: #dbffe8; border-color: #85e6c5;}
+    @keyframes animeNotePop {
+      0% { transform: scale(0.72) rotate(-7deg);}
+      75% { transform: scale(1.11) rotate(4deg);}
+      100% { transform: scale(1) rotate(0deg);}
+    }
+    @keyframes animePoof {
+      0% { opacity: 1; filter: none; transform: scale(1);}
+      40% { opacity: 0.8; filter: blur(2px) brightness(1.4) drop-shadow(0 0 6px #fac1c9);}
+      70% { opacity: 0.4; transform: scale(1.15);}
+      100% { opacity: 0; filter: blur(12px) brightness(2.5); transform: scale(1.22) rotate(-26deg);}
+    }
+    .destroying { animation: animePoof 0.8s forwards; pointer-events: none; }
+    .note textarea {
+      width: 99%;
+      box-sizing: border-box;
+      min-height: 75px;
+      background: transparent;
+      border: none;
+      resize: none;
+      font-size: 1em;
+      outline: none;
+      color: #3c3341;
+      font-family: inherit;
+      margin-bottom: 4px;
+      letter-spacing: 1px;
+      padding: 0;
+    }
+    .deleteBtn {
+      position: absolute;
+      bottom: 10px;
+      right: 13px;
+      border: none;
+      color: #fff;
+      font-size: 1.18em;
+      border-radius: 50%;
+      width: 31px; height: 31px;
+      background: linear-gradient(90deg, #8360c3, #f7b5c7 85%);
+      box-shadow: 0 2px 12px #b5f3ff;
+      cursor: pointer;
+      outline: none;
+      transition: background 0.18s, transform 0.18s;
+      font-family: 'Hanalei Fill', cursive;
+    }
+    .deleteBtn:hover {
+      background: linear-gradient(90deg, #f7b5c7, #8360c3 85%);
+      transform: scale(1.2) rotate(-7deg);
+    }
+  </style>
+</head>
+<body>
+  <h1>Sticky Notes</h1>
+  <button id="addNoteBtn">+ Add Note</button>
+  <div id="notesBoard"></div>
+  <script>
+    const NOTE_HUES = ["pink", "blue", "yellow", "lavender", "mint"];
+    function randomStyle() {
+      return NOTE_HUES[Math.floor(Math.random() * NOTE_HUES.length)];
+    }
+    function saveNotes() {
+      const notes = [];
+      document.querySelectorAll('.note').forEach(note => {
+        notes.push({
+          id: note.dataset.id,
+          style: [...note.classList].find(c => NOTE_HUES.includes(c)),
+          content: note.querySelector('textarea').value,
+          left: note.style.left,
+          top: note.style.top
+        });
+      });
+      localStorage.setItem('animeStickyNotes', JSON.stringify(notes));
+    }
+    function loadNotes() {
+      const notes = JSON.parse(localStorage.getItem('animeStickyNotes') || "[]");
+      notes.forEach(n => addNote(n.content, n.style, n.left, n.top, n.id));
+    }
+    let idCounter = 1;
+    function addNote(content="", style=null, left=null, top=null, id=null) {
+      const note = document.createElement('div');
+      note.className = 'note ' + (style || randomStyle());
+      note.style.left = left || (50 + Math.random() * 35) + 'vw';
+      note.style.top = top || (66 + Math.random() * 260) + 'px';
+      note.dataset.id = id || `note_${Date.now()}_${idCounter++}`;
+      const textarea = document.createElement('textarea');
+      textarea.value = content;
+      textarea.placeholder = "Write your idea here (^_^)";
+      textarea.addEventListener('input', saveNotes);
+      const delBtn = document.createElement('button');
+      delBtn.innerHTML = '✦';
+      delBtn.className = 'deleteBtn';
+      delBtn.title = "Delete Note";
+      delBtn.onclick = () => {
+        note.classList.add('destroying');
+        setTimeout(() => {
+          note.remove();
+          saveNotes();
+        }, 800);
+      };
+      note.appendChild(textarea);
+      note.appendChild(delBtn);
+      document.getElementById('notesBoard').appendChild(note);
+      makeDraggable(note);
+    }
+    document.getElementById('addNoteBtn').onclick = () => {
+      addNote();
+      saveNotes();
+    };
+    function makeDraggable(element) {
+      let offsetX, offsetY, drag = false;
+      element.addEventListener('mousedown', function (e) {
+        drag = true;
+        offsetX = e.clientX - element.offsetLeft;
+        offsetY = e.clientY - element.offsetTop;
+        element.style.zIndex = 999;
+      });
+      document.addEventListener('mousemove', function (e) {
+        if (!drag) return;
+        element.style.left = (e.clientX - offsetX) + 'px';
+        element.style.top = (e.clientY - offsetY) + 'px';
+      });
+      document.addEventListener('mouseup', function () {
+        if (drag) {
+          drag = false;
+          element.style.zIndex = 10;
+          saveNotes();
+        }
+      });
+      element.addEventListener('touchstart', function (e) {
+        drag = true;
+        const touch = e.touches[0];
+        offsetX = touch.clientX - element.offsetLeft;
+        offsetY = touch.clientY - element.offsetTop;
+        element.style.zIndex = 999;
+      }, {passive: false});
+      document.addEventListener('touchmove', function (e) {
+        if (!drag) return;
+        const touch = e.touches[0];
+        element.style.left = (touch.clientX - offsetX) + 'px';
+        element.style.top = (touch.clientY - offsetY) + 'px';
+      }, {passive: false});
+      document.addEventListener('touchend', function () {
+        if (drag) {
+          drag = false;
+          element.style.zIndex = 10;
+          saveNotes();
+        }
+      });
+    }
+    loadNotes();
+  </script>
+</body>
+</html>
